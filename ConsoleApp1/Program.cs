@@ -43,7 +43,7 @@ namespace ConsoleApp1
             return "Task id: " + Id + "; Info: " + TaskInfo + '.';
         }
     }
-
+/*
     internal class Task : Task_base
     {
         private readonly TaskManager _subTasks;
@@ -64,7 +64,7 @@ namespace ConsoleApp1
         }
         
     }
-
+*/
     //can handle tasks with equal id in different containers - may be fixed?
     internal partial class TaskManager
     {
