@@ -1,30 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-
-/*
-TODO...
-/save file-name.txt - сохраняет все текущие задачи в указанный файл
-/load file-name.txt - загружает задачи с файла
-TODO...
-Возможность указать дату выполнения (дедлайн)
-    Информация вывродиться в /all
-    Добавляется команда /today - выводит только те задачи, которые нужно сделать сегодня
-Группировка задач - возможность создавать группы задач
-    /create-group group-name - создает группу для задач
-    /delete-group group-name - удаляет группу с заданным именем
-    /add-to-group id group-name - добавляет таску с указанным id в группу с указанным именем
-    /delete-from-group id group-name - удаляет задачу c группы
-    Задачи, которые находятся в группе должны при выполнении /all отображаться вложенным списком
-    /completed group-name - выводит все выполненные в группе задачи
-Подзадачи
-    Команда /add-subtask id subtask-info - добавляет к выбранной задаче подзадачу
-    Добавить поддержку выполнение подзадачи по комманде /complete id
-    Для задач с подзадачами выводится информация о том, сколько подзадач выполнено в формате "3/4"
-Обработка ошибок - отсутствие файлов, неправильный формат ввода
-    Учесть корнер кейсы. Например, задача не может быть добавлена дважды
-*/
+using System.IO.Compression;
+using System.Runtime.InteropServices.ComTypes;
 
 /*
 save.txt:
@@ -65,33 +43,44 @@ namespace ConsoleApp1
 
     internal class Task : SubTask
     {
-        private readonly TaskManagerBase _subTasks;
+        public TaskManagerBase Subs { get; }
         public DateTime Deadline { get; }
+        public uint AmountDoneSubTasks { get; private set; }  // = 0?
 
         public Task(uint currientId, string info, string date) : base(currientId, info)
         {
-            _subTasks = new TaskManagerBase();
+            Subs = new TaskManagerBase();
             DateTime.TryParse(date, out var time);  //check for valid conversion needed
             Deadline = time;
+            AmountDoneSubTasks = 0;
         }
         
         public void add_sub(string info)
         {
-            _subTasks.Add(info);
+            Subs.Add(info);
         }
 
         public void complete_sub(uint completeSubtaskId)
         {
-            _subTasks.Complete(completeSubtaskId);
+            Subs.Complete(completeSubtaskId);
+            AmountDoneSubTasks++;
+        }
+
+        public void delete_sub(uint removeSubTaskId)
+        {
+            Subs.Remove(removeSubTaskId);
+            AmountDoneSubTasks--;
         }
 
         public override string ToString()
         {
-            var buffer = base.ToString();
-            foreach (var item in _subTasks.Tasks.Values)
-            {
-                buffer += Convert.ToChar(195) + item.ToString() + "\n";
-            }
+            var buffer = "Task id: " + Id + "; Info: " + TaskInfo + "; Status: " +
+                         (IsCompleted ? "done" : "unsolved") + "; Deadline: " + Deadline.ToString("d");
+            if (Convert.ToBoolean(Subs.Tasks.Count))
+                buffer += "; Progress: " + AmountDoneSubTasks + "/" + Subs.Tasks.Count;
+            buffer += "\n";
+            foreach (var item in Subs.Tasks.Values)
+                buffer += "├─> " + item.ToString() + "\n";
             return buffer;
         }
     }
@@ -107,8 +96,8 @@ namespace ConsoleApp1
     //can handle tasks with equal id in different containers - may be fixed?
     internal class TaskManagerBase
     {
-        private uint next_id;   // = 0?
-        public virtual SortedDictionary<uint, SubTask> Tasks { get; } = new();
+        private uint _nextId;   // = 0?
+        public virtual SortedDictionary<uint, SubTask> Tasks { get; private set; } = new();
 
         public void Add(string value) //rename to Insert?
         {
@@ -117,9 +106,9 @@ namespace ConsoleApp1
             //check for items with equal id 
             //Tasks.ContainsValue(value);
             
-            var tsk = new SubTask(next_id, value);
-            var result = Tasks.TryAdd(next_id, tsk);  //what to do if task with next_id already exists?
-            next_id++;
+            var tsk = new SubTask(_nextId, value);
+            var result = Tasks.TryAdd(_nextId, tsk);  //what to do if task with next_id already exists?
+            _nextId++;
         }
 
         public void Complete(uint id)
@@ -128,7 +117,9 @@ namespace ConsoleApp1
             if (!result)
                 Console.WriteLine("Error"); //throw must be here
             else //else may be removed when throw is added
+            {
                 buf.Complete();
+            }
         }
 
         public void Remove(uint id) //rename to Erase?
@@ -136,10 +127,13 @@ namespace ConsoleApp1
             var result = Tasks.Remove(id, out var buf);
             if (!result)
                 Console.WriteLine("Error"); //throw must be here
-            Console.WriteLine(buf + " removed"); //maybe: "task_info removed"?
+            else //else may be removed when throw is added
+            {
+                Console.WriteLine(buf + " removed"); //maybe: "task_info removed"?
+            }
         }
 
-        public void Save(string path)
+        public void Save(string path)   //needs to be moved to TaskManager
         {
             var file = new StreamWriter(path, false);
 
@@ -149,11 +143,15 @@ namespace ConsoleApp1
             file.Close();
         }
 
-        public void Load(string path)
+        public void Load(string path)   //needs to be moved to TaskManager
         {
             var file = new StreamReader(path);
             string line;
             var i = 0u;
+            
+            //this = new TaskManagerBase();
+            _nextId = 0;
+            Tasks = new SortedDictionary<uint, SubTask>();
             
             while ((line = file.ReadLine()) != null)
             {
@@ -161,8 +159,8 @@ namespace ConsoleApp1
                 
                 if (string.Equals(statment[0], "<subtask"))
                 {
-                    Add(statment[6]);
-                    if (string.Equals(statment[4], "done"))
+                    Add(statment[5]);
+                    if (string.Equals(statment[3], "done"))
                         Complete(i);
                     i++;
                 }
@@ -200,17 +198,12 @@ namespace ConsoleApp1
                 Console.WriteLine("No tasks to do yet");
         }
     }
-/*
-    class TaskManager : TaskManagerBase
-    {
-        
-    }
-*/    
+    
     class Program
     {
         public static void Main()
         {
-            var l = new TaskManagerBase();
+            var l = new Task(0, "test", DateTime.Today.ToString("d"));
             string input;
 
             while ((input = Console.ReadLine()) != null && input != "") //input comparision may be redundant?
@@ -222,11 +215,11 @@ namespace ConsoleApp1
                     switch (command)
                     {
                         case "/all":
-                            l.Show();
+                            Console.Write(l);
                             break;
 
                         case "/completed":
-                            l.ShowCompleted();
+                            l.Subs.ShowCompleted();
                             break;
                         
                         case "/stop": //FALLTHROUGH
@@ -242,31 +235,31 @@ namespace ConsoleApp1
                     switch (command)
                     {
                         case "/add":
-                            l.Add(statment[1]);
+                            l.Subs.Add(statment[1]);
                             break;
                         
                         case "/delete":
-                            if (!uint.TryParse(statment[1], out var remove_id))
+                            if (!uint.TryParse(statment[1], out var removeId))
                                 Console.WriteLine("Failed to parse: " + statment[1] + " into UInt32; statement disregarded");
                             else
-                                l.Remove(remove_id);
+                                l.Subs.Remove(removeId);
                             break;
                         
                         case "/save":
                             //check for valid path???
-                            l.Save(statment[1]);
+                            l.Subs.Save(statment[1]);
                             break;
                         
                         case "/load":
                             //check for valid path!!!
-                            l.Load(statment[1]);
+                            l.Subs.Load(statment[1]);
                             break;
                         
                         case "/complete":
-                            if (!uint.TryParse(statment[1], out var complete_id))
+                            if (!uint.TryParse(statment[1], out var completeId))
                                 Console.WriteLine("Failed to parse: " + statment[1] + " into UInt32; statement disregarded");
                             else
-                                l.Complete(complete_id);
+                                l.complete_sub(completeId);
                             break;
                         
                         default:
