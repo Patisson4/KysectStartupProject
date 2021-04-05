@@ -43,14 +43,14 @@ namespace ConsoleApp1
     {
         public TaskManagerBase Subs { get; }
         public DateTime Deadline { get; }
-        public uint AmountDoneSubTasks { get; private set; }  // = 0?
+        public uint AmountSubTasksDone { get; private set; }  // = 0?
 
         public Task(uint currientId, string info, string date) : base(currientId, info)
         {
             Subs = new TaskManagerBase();
             DateTime.TryParse(date, out var time);  //check for valid conversion needed
             Deadline = time;
-            AmountDoneSubTasks = 0;
+            AmountSubTasksDone = 0;
         }
         
         public void add_sub(string info)
@@ -61,13 +61,13 @@ namespace ConsoleApp1
         public void complete_sub(uint completeSubtaskId)
         {
             Subs.Complete(completeSubtaskId);
-            AmountDoneSubTasks++;
+            AmountSubTasksDone++;
         }
 
         public void delete_sub(uint removeSubTaskId)
         {
             Subs.Remove(removeSubTaskId);
-            AmountDoneSubTasks--;
+            AmountSubTasksDone--;
         }
 
         public override string ToString()
@@ -75,7 +75,7 @@ namespace ConsoleApp1
             var buffer = "Task id: " + Id + "; Info: " + TaskInfo + "; Status: " +
                          (IsCompleted ? "done" : "unsolved") + "; Deadline: " + Deadline.ToString("d");
             if (Convert.ToBoolean(Subs.Tasks.Count))
-                buffer += "; Progress: " + AmountDoneSubTasks + "/" + Subs.Tasks.Count;
+                buffer += "; Progress: " + AmountSubTasksDone + "/" + Subs.Tasks.Count;
             buffer += "\n";
             foreach (var item in Subs.Tasks.Values)
                 buffer += "├─> " + item.ToString() + "\n";
