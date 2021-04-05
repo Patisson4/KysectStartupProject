@@ -197,7 +197,7 @@ namespace ConsoleApp1
     {
         public static void Main()
         {
-            var l = new Task(0, "test", DateTime.Today.ToString("d"));
+            var l = new TaskManagerBase();
             string input;
 
             while ((input = Console.ReadLine()) != null && input != "") //input comparision may be redundant?
@@ -209,11 +209,11 @@ namespace ConsoleApp1
                     switch (command)
                     {
                         case "/all":
-                            Console.Write(l);
+                            l.Show();
                             break;
 
                         case "/completed":
-                            l.Subs.ShowCompleted();
+                            l.ShowCompleted();
                             break;
                         
                         case "/stop": //FALLTHROUGH
@@ -229,31 +229,31 @@ namespace ConsoleApp1
                     switch (command)
                     {
                         case "/add":
-                            l.Subs.Add(statment[1]);
+                            l.Add(statment[1]);
                             break;
                         
                         case "/delete":
                             if (!uint.TryParse(statment[1], out var removeId))
                                 Console.WriteLine("Failed to parse: " + statment[1] + " into UInt32; statement disregarded");
                             else
-                                l.Subs.Remove(removeId);
+                                l.Remove(removeId);
                             break;
                         
                         case "/save":
                             //check for valid path???
-                            l.Subs.Save(statment[1]);
+                            l.Save(statment[1]);
                             break;
                         
                         case "/load":
                             //check for valid path!!!
-                            l.Subs.Load(statment[1]);
+                            l.Load(statment[1]);
                             break;
                         
                         case "/complete":
                             if (!uint.TryParse(statment[1], out var completeId))
                                 Console.WriteLine("Failed to parse: " + statment[1] + " into UInt32; statement disregarded");
                             else
-                                l.complete_sub(completeId);
+                                l.Complete(completeId);
                             break;
                         
                         default:
