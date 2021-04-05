@@ -115,9 +115,7 @@ namespace ConsoleApp1
             if (!result)
                 Console.WriteLine("Error"); //throw must be here
             else //else may be removed when throw is added
-            {
                 buf.Complete();
-            }
         }
 
         public void Remove(uint id) //rename to Erase?
@@ -126,9 +124,7 @@ namespace ConsoleApp1
             if (!result)
                 Console.WriteLine("Error"); //throw must be here
             else //else may be removed when throw is added
-            {
                 Console.WriteLine(buf + " removed"); //maybe: "task_info removed"?
-            }
         }
 
         public void Save(string path)   //needs to be moved to TaskManager
