@@ -159,7 +159,6 @@ namespace ConsoleApp1
                     i++;
                 }
             }
-            Console.WriteLine(i);
             file.Close();
         }
         
