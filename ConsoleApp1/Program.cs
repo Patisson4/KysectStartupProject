@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -203,6 +203,8 @@ namespace ConsoleApp1
             {   //Ctrl+Z to successful stop
                 var statment = input.Split(' ');
                 var command = statment[0];
+                //I want to reject arg cuz there is commands with more than one argument
+                //var arg = statment.Length > 1 ? statment[1] : ""; // input.Split(' ')[1] crashes when no-argument command (e.g. "/all") given
                 
                 if (statment.Length == 1)
                     switch (command)
@@ -232,10 +234,10 @@ namespace ConsoleApp1
                             break;
                         
                         case "/delete":
-                            if (!uint.TryParse(statment[1], out var removeId))
+                            if (!uint.TryParse(statment[1], out var remove_id))
                                 Console.WriteLine("Failed to parse: " + statment[1] + " into UInt32; statement disregarded");
                             else
-                                l.Remove(removeId);
+                                l.Remove(remove_id);
                             break;
                         
                         case "/save":
@@ -249,10 +251,10 @@ namespace ConsoleApp1
                             break;
                         
                         case "/complete":
-                            if (!uint.TryParse(statment[1], out var completeId))
+                            if (!uint.TryParse(statment[1], out var complete_id))
                                 Console.WriteLine("Failed to parse: " + statment[1] + " into UInt32; statement disregarded");
                             else
-                                l.Complete(completeId);
+                                l.Complete(complete_id);
                             break;
                         
                         default:
