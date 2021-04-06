@@ -166,7 +166,7 @@ namespace ConsoleApp1
         {
             var amount = 0;
             
-            foreach (var item in Tasks.Values)  //!!When loaded, 
+            foreach (var item in Tasks.Values)  //!!When loaded, class Task doesnt know amount of solved tasks
                 if (item.IsCompleted)
                     amount++;
 
@@ -198,7 +198,7 @@ namespace ConsoleApp1
         {
             var l = new TaskManagerBase();
             string input;
-            
+
             while ((input = Console.ReadLine()) != null && input != "") //input comparision may be redundant?
             {   //Ctrl+Z to successful stop
                 var statment = input.Split(' ');
