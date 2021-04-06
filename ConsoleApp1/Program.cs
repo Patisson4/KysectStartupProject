@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -41,9 +41,9 @@ namespace ConsoleApp1
 
     internal class Task : SubTask
     {
-        private TaskManagerBase Subs { get; }
-        private uint AmountSubTasksDone { get; set; }  // = 0?
-        internal DateTime Deadline { get; } //should be made private?? i thought it cuz DataTime is immutable 
+        public TaskManagerBase Subs { get; }
+        public DateTime Deadline { get; }
+        public uint AmountSubTasksDone { get; private set; }  // = 0?
 
         public Task(uint currientId, string info, string date) : base(currientId, info)
         {
@@ -95,7 +95,7 @@ namespace ConsoleApp1
     internal class TaskManagerBase
     {
         private uint _nextId;   // = 0?
-        internal virtual SortedDictionary<uint, SubTask> Tasks { get; private set; } = new();   //should be made protected
+        public virtual SortedDictionary<uint, SubTask> Tasks { get; private set; } = new();
 
         public void Add(string value) //rename to Insert?
         {
@@ -166,7 +166,7 @@ namespace ConsoleApp1
         {
             var amount = 0;
             
-            foreach (var item in Tasks.Values)  //!!When loaded, class Task doesnt know amount of solved tasks
+            foreach (var item in Tasks.Values)
                 if (item.IsCompleted)
                     amount++;
 
