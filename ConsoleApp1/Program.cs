@@ -41,9 +41,9 @@ namespace ConsoleApp1
 
     internal class Task : SubTask
     {
-        public TaskManagerBase Subs { get; }
-        public DateTime Deadline { get; }
-        public uint AmountSubTasksDone { get; private set; }  // = 0?
+        private TaskManagerBase Subs { get; }
+        private uint AmountSubTasksDone { get; set; }  // = 0?
+        internal DateTime Deadline { get; } //should ve made private?? i thought it cuz DataTime is immutable 
 
         public Task(uint currientId, string info, string date) : base(currientId, info)
         {
@@ -95,7 +95,7 @@ namespace ConsoleApp1
     internal class TaskManagerBase
     {
         private uint _nextId;   // = 0?
-        public virtual SortedDictionary<uint, SubTask> Tasks { get; private set; } = new();
+        internal virtual SortedDictionary<uint, SubTask> Tasks { get; private set; } = new();   //should be made protected
 
         public void Add(string value) //rename to Insert?
         {
@@ -166,7 +166,7 @@ namespace ConsoleApp1
         {
             var amount = 0;
             
-            foreach (var item in Tasks.Values)
+            foreach (var item in Tasks.Values)  //!!When loaded, 
                 if (item.IsCompleted)
                     amount++;
 
@@ -198,7 +198,7 @@ namespace ConsoleApp1
         {
             var l = new TaskManagerBase();
             string input;
-
+            
             while ((input = Console.ReadLine()) != null && input != "") //input comparision may be redundant?
             {   //Ctrl+Z to successful stop
                 var statment = input.Split(' ');
