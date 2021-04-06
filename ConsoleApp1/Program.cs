@@ -38,7 +38,12 @@ namespace ConsoleApp1
             return "SubTask id: " + Id + "; Info: " + TaskInfo + "; Status: " + (IsCompleted ? "done" : "unsolved");
         }
     }
-
+/*
+    internal class Task : SubTask
+    {
+    
+    }
+*/
     //can handle tasks with equal id in different containers - may be fixed?
     internal class TaskManagerBase
     {
