@@ -39,58 +39,6 @@ namespace ConsoleApp1
         }
     }
 
-    internal class Task : SubTask
-    {
-        private TaskManagerBase Subs { get; }
-        private uint AmountSubTasksDone { get; set; }  // = 0?
-        internal DateTime Deadline { get; } //should be made private?? i thought it cuz DataTime is immutable 
-
-        public Task(uint currientId, string info, string date) : base(currientId, info)
-        {
-            Subs = new TaskManagerBase();
-            DateTime.TryParse(date, out var time);  //check for valid conversion needed
-            Deadline = time;
-            AmountSubTasksDone = 0;
-        }
-        
-        public void add_sub(string info)
-        {
-            Subs.Add(info);
-        }
-
-        public void complete_sub(uint completeSubtaskId)
-        {
-            Subs.Complete(completeSubtaskId);
-            AmountSubTasksDone++;
-        }
-
-        public void delete_sub(uint removeSubTaskId)
-        {
-            Subs.Remove(removeSubTaskId);
-            AmountSubTasksDone--;
-        }
-
-        public override string ToString()
-        {
-            var buffer = "Task id: " + Id + "; Info: " + TaskInfo + "; Status: " +
-                         (IsCompleted ? "done" : "unsolved") + "; Deadline: " + Deadline.ToString("d");
-            if (Convert.ToBoolean(Subs.Tasks.Count))
-                buffer += "; Progress: " + AmountSubTasksDone + "/" + Subs.Tasks.Count;
-            buffer += "\n";
-            foreach (var item in Subs.Tasks.Values)
-                buffer += "├─> " + item.ToString() + "\n";
-            return buffer;
-        }
-    }
-
-    internal class Comp : IComparer<Task>
-    {
-        public int Compare(Task x, Task y)
-        {
-            return DateTime.Compare(x.Deadline, y.Deadline);
-        }
-    }
-    
     //can handle tasks with equal id in different containers - may be fixed?
     internal class TaskManagerBase
     {
