@@ -3,184 +3,131 @@ using System.Collections.Generic;
 using System.IO;
 
 /*
-TODO...
-/save file-name.txt - сохраняет все текущие задачи в указанный файл
-/load file-name.txt - загружает задачи с файла
-TODO...
-Возможность указать дату выполнения (дедлайн)
-    Информация вывродиться в /all
-    Добавляется команда /today - выводит только те задачи, которые нужно сделать сегодня
-Группировка задач - возможность создавать группы задач
-    /create-group group-name - создает группу для задач
-    /delete-group group-name - удаляет группу с заданным именем
-    /add-to-group id group-name - добавляет таску с указанным id в группу с указанным именем
-    /delete-from-group id group-name - удаляет задачу c группы
-    Задачи, которые находятся в группе должны при выполнении /all отображаться вложенным списком
-    /completed group-name - выводит все выполненные в группе задачи
-Подзадачи
-    Команда /add-subtask id subtask-info - добавляет к выбранной задаче подзадачу
-    Добавить поддержку выполнение подзадачи по комманде /complete id
-    Для задач с подзадачами выводится информация о том, сколько подзадач выполнено в формате "3/4"
-Обработка ошибок - отсутствие файлов, неправильный формат ввода
-    Учесть корнер кейсы. Например, задача не может быть добавлена дважды
-*/
-
-/*
 save.txt:
 
-<completed>
-</completed>
-<todo>
-	[<meta> MetaTaskName]
-		<task> TaskName
-			[<subtask> SubTaskName </subtask>]
-		</task>
-	[</meta>]
-</todo>
+[<meta> MetaTaskName]
+	<task status=unsolved> 
+		<info> TaskName </info>
+		[<subtask status=done> SubTaskName </subtask>]
+	</task>
+[</meta>]
 */
 
 namespace ConsoleApp1
 {
-    internal partial class TaskManagerBase {}
-
-    internal class TaskBase
+    internal class SubTask
     {
         public string TaskInfo { get; }
         public uint Id { get; }
+        public bool IsCompleted { get; private set; }
 
-        public TaskBase(uint current_id, string info)
+        public SubTask(uint currentId, string info)
         {
             TaskInfo = info;
-            Id = current_id;
+            Id = currentId;
+            IsCompleted = false;
+        }
+
+        public void Complete()
+        {
+            IsCompleted = true;
         }
 
         public override string ToString()
         {
-            return "Task id: " + Id + "; Info: " + TaskInfo + '.';
+            return "SubTask id: " + Id + "; Info: " + TaskInfo + "; Status: " + (IsCompleted ? "done" : "unsolved");
         }
     }
 /*
-    internal class Task : TaskBase
+    internal class Task : SubTask
     {
-        private readonly TaskManagerBase _subTasks;
-
-        public Task(uint currient_id, string info) : base(currient_id, info)
-        {
-            _subTasks = new TaskManagerBase();
-        }
-        
-        public void add_sub(string info)
-        {
-            _subTasks.Add(info);
-        }
-
-        public void complete_sub(uint complete_id)
-        {
-            _subTasks.Complete(complete_id);
-        }
-        
+    
     }
 */
     //can handle tasks with equal id in different containers - may be fixed?
-    internal partial class TaskManagerBase
+    internal class TaskManagerBase
     {
-        private SortedDictionary<uint, TaskBase> Finished { get; } = new();
-        private SortedDictionary<uint, TaskBase> Todo { get; } = new();
-        private uint next_id;   // = 0?
+        private uint _nextId;   // = 0?
+        internal virtual SortedDictionary<uint, SubTask> Tasks { get; private set; } = new();   //should be made protected
 
         public void Add(string value) //rename to Insert?
         {
-            //check for items with equal id 
-            //add message needed
+            //add message needed?
 
-            //Todo.ContainsValue(value);
+            //check for items with equal id 
+            //Tasks.ContainsValue(value);
             
-            var tsk = new TaskBase(next_id, value);
-            var result = Todo.TryAdd(next_id, tsk);  //what to do if task with next_id already exists?
-            next_id++;
+            var tsk = new SubTask(_nextId, value);
+            var result = Tasks.TryAdd(_nextId, tsk);  //what to do if task with next_id already exists?
+            _nextId++;
         }
 
         public void Complete(uint id)
         {
-            var result = Todo.Remove(id, out var buf);
+            var result = Tasks.TryGetValue(id, out var buf);
             if (!result)
                 Console.WriteLine("Error"); //throw must be here
-            else                            //else may be removed when throw is added
-                Finished.Add(buf.Id, buf);
+            else //else may be removed when throw is added
+                buf.Complete();
         }
 
         public void Remove(uint id) //rename to Erase?
         {
-            var result = Todo.Remove(id, out var buf);
+            var result = Tasks.Remove(id, out var buf);
             if (!result)
-            {
-                result = Finished.Remove(id, out buf);
-                if (!result)
-                    Console.WriteLine("Error"); //throw must be here
-            }
-            Console.WriteLine(buf + " removed"); //maybe: "task_info removed"?
+                Console.WriteLine("Error"); //throw must be here
+            else //else may be removed when throw is added
+                Console.WriteLine(buf + " removed"); //maybe: "task_info removed"?
         }
 
-        public void Save(string path)
+        public void Save(string path)   //needs to be moved to TaskManager
         {
             var file = new StreamWriter(path, false);
-            
-            file.WriteLine("<completed>");
-            
-            foreach (var item in Finished)
-                file.WriteLine("<task> " + item.Value.TaskInfo + "\n</task>");
-            
-            file.WriteLine("</completed>");
-            file.WriteLine("<todo>");
-            
-            foreach (var item in Todo)
-                file.WriteLine("<task> " + item.Value.TaskInfo + "\n</task>");
 
-            file.WriteLine("</todo>");
+            foreach (var item in Tasks.Values)
+                file.WriteLine("<subtask status = " + (item.IsCompleted ? "done" : "unsolved") + " > " + item.TaskInfo + " </subtask>");
+            
             file.Close();
         }
 
-        public void Load(string path)
+        public void Load(string path)   //needs to be moved to TaskManager
         {
             var file = new StreamReader(path);
             string line;
             var i = 0u;
             
-            file.ReadLine();
+            //this = new TaskManagerBase();
+            _nextId = 0;
+            Tasks = new SortedDictionary<uint, SubTask>();
+            
             while ((line = file.ReadLine()) != null)
             {
                 var statment = line.Split(' ');
-                if (string.Equals(statment[0], "</completed>"))
-                    break;
                 
-                Console.WriteLine(statment[0] + " <task>");
-                if (string.Equals(statment[0], "<task>"))
+                if (string.Equals(statment[0], "<subtask"))
                 {
-                    Add(statment[1]);
-                    Complete(i);
+                    Add(statment[5]);
+                    if (string.Equals(statment[3], "done"))
+                        Complete(i);
                     i++;
                 }
-            }
-            
-            file.ReadLine();
-            while ((line = file.ReadLine()) != null)
-            {
-                var statment = line.Split(' ');
-                if (string.Equals(statment[0], "</todo>"))
-                    break;
-                if (string.Equals(statment[0], "<task>"))
-                    Add(statment[1]);
             }
             file.Close();
         }
         
         public void ShowCompleted()
         {
-            if (Convert.ToBoolean(Finished.Count))
+            var amount = 0;
+            
+            foreach (var item in Tasks.Values)  //!!When loaded, class Task doesnt know amount of solved tasks
+                if (item.IsCompleted)
+                    amount++;
+
+            if (Convert.ToBoolean(amount))
             {
                 Console.WriteLine("Completed:");
-                foreach (var item in Finished)
-                    Console.WriteLine(item.Value);
+                foreach (var item in Tasks.Values)
+                    Console.WriteLine(item);
             }
             else
                 Console.WriteLine("No completed tasks yet");
@@ -188,16 +135,13 @@ namespace ConsoleApp1
         
         public void Show() //some ostream (?) override needed
         {
-            if (Convert.ToBoolean(Todo.Count))
+            if (Convert.ToBoolean(Tasks.Count))
             {
-                Console.WriteLine("To do:");
-                foreach (var item in Todo)
-                    Console.WriteLine(item.Value);
+                foreach (var item in Tasks.Values)
+                    Console.WriteLine(item);
             }
             else
                 Console.WriteLine("No tasks to do yet");
-
-            ShowCompleted();
         }
     }
     
@@ -212,8 +156,6 @@ namespace ConsoleApp1
             {   //Ctrl+Z to successful stop
                 var statment = input.Split(' ');
                 var command = statment[0];
-                //I want to reject arg cuz there is commands with more than one argument
-                //var arg = statment.Length > 1 ? statment[1] : ""; // input.Split(' ')[1] crashes when no-argument command (e.g. "/all") given
                 
                 if (statment.Length == 1)
                     switch (command)
@@ -243,10 +185,10 @@ namespace ConsoleApp1
                             break;
                         
                         case "/delete":
-                            if (!uint.TryParse(statment[1], out var remove_id))
+                            if (!uint.TryParse(statment[1], out var removeId))
                                 Console.WriteLine("Failed to parse: " + statment[1] + " into UInt32; statement disregarded");
                             else
-                                l.Remove(remove_id);
+                                l.Remove(removeId);
                             break;
                         
                         case "/save":
@@ -260,10 +202,10 @@ namespace ConsoleApp1
                             break;
                         
                         case "/complete":
-                            if (!uint.TryParse(statment[1], out var complete_id))
+                            if (!uint.TryParse(statment[1], out var completeId))
                                 Console.WriteLine("Failed to parse: " + statment[1] + " into UInt32; statement disregarded");
                             else
-                                l.Complete(complete_id);
+                                l.Complete(completeId);
                             break;
                         
                         default:
