@@ -43,7 +43,7 @@ namespace ConsoleApp1
     {
         private TaskManagerBase Subs { get; }
         private uint AmountSubTasksDone { get; set; }  // = 0?
-        internal DateTime Deadline { get; } //should ve made private?? i thought it cuz DataTime is immutable 
+        internal DateTime Deadline { get; } //should be made private?? i thought it cuz DataTime is immutable 
 
         public Task(uint currientId, string info, string date) : base(currientId, info)
         {
