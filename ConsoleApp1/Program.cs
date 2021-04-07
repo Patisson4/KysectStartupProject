@@ -1,25 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
-
-/*
-save.txt:
-
-[<meta> MetaTaskName]
-	<task status=unsolved> 
-		<info> TaskName </info>
-		[<subtask status=done> SubTaskName </subtask>]
-	</task>
-[</meta>]
-*/
 
 namespace ConsoleApp1
 {
     internal class SubTask
     {
-        public string TaskInfo { get; }
-        public uint Id { get; }
-        public bool IsCompleted { get; private set; }
+        protected uint Id { get; }
+        internal string TaskInfo { get; }
+        internal bool IsCompleted { get; private set; }
 
         public SubTask(uint currentId, string info)
         {
@@ -38,122 +28,142 @@ namespace ConsoleApp1
             return "SubTask id: " + Id + "; Info: " + TaskInfo + "; Status: " + (IsCompleted ? "done" : "unsolved");
         }
     }
-/*
-    internal class Task : SubTask
+
+    internal abstract class Manager
     {
-    
-    }
-*/
-    //can handle tasks with equal id in different containers - may be fixed?
-    internal class TaskManagerBase
-    {
-        private uint _nextId;   // = 0?
-        internal virtual SortedDictionary<uint, SubTask> Tasks { get; private set; } = new();   //should be made protected
+        protected internal uint NextId { get; protected set; } = 0;
 
-        public void Add(string value) //rename to Insert?
-        {
-            //add message needed?
+        protected internal uint CountCompleted { get; protected set; } = 0;
+        
+        public abstract void Add(string value);
 
-            //check for items with equal id 
-            //Tasks.ContainsValue(value);
-            
-            var tsk = new SubTask(_nextId, value);
-            var result = Tasks.TryAdd(_nextId, tsk);  //what to do if task with next_id already exists?
-            _nextId++;
-        }
+        public abstract void Complete(uint id);
 
-        public void Complete(uint id)
-        {
-            var result = Tasks.TryGetValue(id, out var buf);
-            if (!result)
-                Console.WriteLine("Error"); //throw must be here
-            else //else may be removed when throw is added
-                buf.Complete();
-        }
+        public abstract void Remove(uint id);
+        
+        protected abstract void Parse(string rawData);
 
-        public void Remove(uint id) //rename to Erase?
-        {
-            var result = Tasks.Remove(id, out var buf);
-            if (!result)
-                Console.WriteLine("Error"); //throw must be here
-            else //else may be removed when throw is added
-                Console.WriteLine(buf + " removed"); //maybe: "task_info removed"?
-        }
+        protected abstract string Compose();
 
-        public void Save(string path)   //needs to be moved to TaskManager
+        public void Save(string path)
         {
             var file = new StreamWriter(path, false);
-
-            foreach (var item in Tasks.Values)
-                file.WriteLine("<subtask status = " + (item.IsCompleted ? "done" : "unsolved") + " > " + item.TaskInfo + " </subtask>");
-            
+            file.Write(Compose());
             file.Close();
         }
 
-        public void Load(string path)   //needs to be moved to TaskManager
+        public void Load(string path)
         {
             var file = new StreamReader(path);
-            string line;
-            var i = 0u;
+            NextId = 0;
+            CountCompleted = 0;
+            Parse(file.ReadToEnd());
+            file.Close();
+        }
+        
+        public abstract void Show();
+
+        public abstract void ShowCompleted();
+    }
+    
+    internal sealed class TaskManagerBase : Manager
+    {
+        private SortedDictionary<uint, SubTask> _tasks = new(); //there should be a way to move these to properties to abstract Manager
+        internal ReadOnlyDictionary<uint, SubTask> Data => new(_tasks);
+
+        public override void Add(string value) //rename to Insert?
+        {
+            //add message needed? 
+            //Tasks.ContainsValue(value); ?
+            
+            var tsk = new SubTask(NextId, value);
+            _tasks.TryAdd(NextId, tsk);  //what to do if task with next_id already exists?
+            NextId++;
+        }
+
+        public override void Complete(uint id)  //what to do if task already completed?
+        {
+            if (!_tasks.TryGetValue(id, out var buf))
+                Console.WriteLine("Error"); //throw must be here
+            else //else may be removed when throw is added
+            {
+                if (!buf.IsCompleted)
+                    CountCompleted++;
+                buf.Complete();
+            }
+        }
+
+        public override void Remove(uint id) //rename to Erase?
+        {
+            if (!_tasks.Remove(id, out var buf))
+                Console.WriteLine("Error"); //throw must be here
+            else //else may be removed when throw is added
+            {
+                Console.WriteLine("\"" + buf + "\" removed"); //maybe: "task_info removed"?
+                if (buf.IsCompleted)
+                    CountCompleted--;
+            }
+        }
+
+        protected override string Compose()
+        {
+            var buffer = "";
+            foreach (var item in _tasks.Values)
+                buffer += "<subtask status = " + (item.IsCompleted ? "done" : "unsolved") + " > " + item.TaskInfo + " </subtask>\n";
+            return buffer;
+        }
+
+        protected override void Parse(string rawData)
+        {
+            var data = rawData.Split('\n');
             
             //this = new TaskManagerBase();
-            _nextId = 0;
-            Tasks = new SortedDictionary<uint, SubTask>();
+            _tasks = new SortedDictionary<uint, SubTask>();
             
-            while ((line = file.ReadLine()) != null)
+            foreach (var line in data)
             {
                 var statment = line.Split(' ');
-                
                 if (string.Equals(statment[0], "<subtask"))
                 {
                     Add(statment[5]);
                     if (string.Equals(statment[3], "done"))
-                        Complete(i);
-                    i++;
+                        Complete(NextId - 1);
                 }
             }
-            file.Close();
         }
         
-        public void ShowCompleted()
+        public override void ShowCompleted()
         {
-            var amount = 0;
-            
-            foreach (var item in Tasks.Values)  //!!When loaded, class Task doesnt know amount of solved tasks
-                if (item.IsCompleted)
-                    amount++;
-
-            if (Convert.ToBoolean(amount))
-            {
-                Console.WriteLine("Completed:");
-                foreach (var item in Tasks.Values)
-                    Console.WriteLine(item);
-            }
+            if (Convert.ToBoolean(CountCompleted))
+                foreach (var item in _tasks.Values)
+                {
+                    if (item.IsCompleted)
+                        Console.WriteLine(item);
+                }
             else
                 Console.WriteLine("No completed tasks yet");
         }
         
-        public void Show() //some ostream (?) override needed
+        public override void Show()
         {
-            if (Convert.ToBoolean(Tasks.Count))
-            {
-                foreach (var item in Tasks.Values)
+            if (Convert.ToBoolean(_tasks.Count))
+                foreach (var item in _tasks.Values)
                     Console.WriteLine(item);
-            }
             else
                 Console.WriteLine("No tasks to do yet");
         }
     }
-    
+
     class Program
     {
         public static void Main()
         {
-            var l = new TaskManagerBase();
+            Manager l = new TaskManagerBase();
             string input;
 
+            //Ctrl+Z to successful stop
             while ((input = Console.ReadLine()) != null && input != "") //input comparision may be redundant?
-            {   //Ctrl+Z to successful stop
+            {
                 var statment = input.Split(' ');
                 var command = statment[0];
                 
@@ -168,8 +178,10 @@ namespace ConsoleApp1
                             l.ShowCompleted();
                             break;
                         
-                        case "/stop": //FALLTHROUGH
-                        case "/quit": //FALLTHROUGH
+                        case "/stop":
+                            //FALLTHROUGH
+                        case "/quit":
+                            //FALLTHROUGH
                         case "/exit":
                             return;
                         
