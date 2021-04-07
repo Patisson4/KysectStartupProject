@@ -69,6 +69,7 @@ namespace ConsoleApp1
 
         public override string ToString()
         {
+            //may be rewritten to somehow use ToString from SubTask
             var buffer = "Task id: " + Id + "; Info: " + TaskInfo + "; Status: " +
                          (IsCompleted ? "done" : "unsolved") + "; Deadline: " + Deadline.ToString("d");
             if (Convert.ToBoolean(Subs.CountCompleted))
