@@ -3,17 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 
-/*
-save.txt:
-
-[<meta> MetaTaskName]
-	<task status=unsolved> 
-		<info> TaskName </info>
-		[<subtask status=done> SubTaskName </subtask>]
-	</task>
-[</meta>]
-*/
-
 namespace ConsoleApp1
 {
     internal class SubTask
@@ -37,46 +26,6 @@ namespace ConsoleApp1
         public override string ToString()
         {
             return "SubTask id: " + Id + "; Info: " + TaskInfo + "; Status: " + (IsCompleted ? "done" : "unsolved");
-        }
-    }
-
-    internal class Task : SubTask
-    {
-        private TaskManagerBase Subs { get; }
-        internal DateTime Deadline { get; } //should be made private?? i thought no cuz DataTime is immutable 
-
-        public Task(uint currientId, string info, string date) : base(currientId, info)
-        {
-            Subs = new TaskManagerBase();
-            DateTime.TryParse(date, out var time);  //check for valid conversion needed
-            Deadline = time;
-        }
-        
-        public void add_sub(string info)
-        {
-            Subs.Add(info);
-        }
-
-        public void complete_sub(uint completeSubtaskId)
-        {
-            Subs.Complete(completeSubtaskId);
-        }
-
-        public void delete_sub(uint removeSubTaskId)
-        {
-            Subs.Remove(removeSubTaskId);
-        }
-
-        public override string ToString()
-        {
-            var buffer = "Task id: " + Id + "; Info: " + TaskInfo + "; Status: " +
-                         (IsCompleted ? "done" : "unsolved") + "; Deadline: " + Deadline.ToString("d");
-            if (Convert.ToBoolean(Subs.CountCompleted))
-                buffer += "; Progress: " + Subs.CountCompleted + "/" + Subs.Data.Count;
-            buffer += "\n";
-            foreach (var item in Subs.Data.Values)
-                buffer += "├─> " + item + "\n";
-            return buffer;
         }
     }
 
@@ -128,14 +77,13 @@ namespace ConsoleApp1
             //Tasks.ContainsValue(value); ?
             
             var tsk = new SubTask(NextId, value);
-            var result = _tasks.TryAdd(NextId, tsk);  //what to do if task with next_id already exists?
+            _tasks.TryAdd(NextId, tsk);  //what to do if task with next_id already exists?
             NextId++;
         }
 
         public override void Complete(uint id)  //what to do if task already completed?
         {
-            var result = _tasks.TryGetValue(id, out var buf);
-            if (!result)
+            if (!_tasks.TryGetValue(id, out var buf))
                 Console.WriteLine("Error"); //throw must be here
             else //else may be removed when throw is added
             {
@@ -147,8 +95,7 @@ namespace ConsoleApp1
 
         public override void Remove(uint id) //rename to Erase?
         {
-            var result = _tasks.Remove(id, out var buf);
-            if (!result)
+            if (!_tasks.Remove(id, out var buf))
                 Console.WriteLine("Error"); //throw must be here
             else //else may be removed when throw is added
             {
@@ -172,18 +119,15 @@ namespace ConsoleApp1
             
             //this = new TaskManagerBase();
             _tasks = new SortedDictionary<uint, SubTask>();
-            var id = 0u;
             
             foreach (var line in data)
             {
                 var statment = line.Split(' ');
-                
                 if (string.Equals(statment[0], "<subtask"))
                 {
                     Add(statment[5]);
                     if (string.Equals(statment[3], "done"))
-                        Complete(id);
-                    id++;
+                        Complete(NextId - 1);
                 }
             }
         }
@@ -191,11 +135,11 @@ namespace ConsoleApp1
         public override void ShowCompleted()
         {
             if (Convert.ToBoolean(CountCompleted))
-            {
                 foreach (var item in _tasks.Values)
+                {
                     if (item.IsCompleted)
                         Console.WriteLine(item);
-            }
+                }
             else
                 Console.WriteLine("No completed tasks yet");
         }
@@ -203,37 +147,12 @@ namespace ConsoleApp1
         public override void Show()
         {
             if (Convert.ToBoolean(_tasks.Count))
-            {
                 foreach (var item in _tasks.Values)
                     Console.WriteLine(item);
-            }
             else
                 Console.WriteLine("No tasks to do yet");
         }
     }
-    
-    internal class Comp : IComparer<Task>
-    {
-        public int Compare(Task x, Task y)
-        {
-            return DateTime.Compare(x.Deadline, y.Deadline);
-        }
-    }
-    
-/*
-    internal class TaskManager : Manager
-    {
-        private SortedDictionary<uint, Task> _tasks; //there should be a way to move these to properties to abstract Manager
-        public ReadOnlyDictionary<uint, Task> Data => new(_tasks);
-
-        public override void Add(string value, string time)
-        {
-            var tsk = new Task(NextId, value, time);
-            var result = _tasks.TryAdd(NextId, tsk);  //what to do if task with next_id already exists?
-            NextId++;
-        }
-    }
-*/
 
     class Program
     {
@@ -242,8 +161,9 @@ namespace ConsoleApp1
             Manager l = new TaskManagerBase();
             string input;
 
+            //Ctrl+Z to successful stop
             while ((input = Console.ReadLine()) != null && input != "") //input comparision may be redundant?
-            {   //Ctrl+Z to successful stop
+            {
                 var statment = input.Split(' ');
                 var command = statment[0];
                 
@@ -258,8 +178,10 @@ namespace ConsoleApp1
                             l.ShowCompleted();
                             break;
                         
-                        case "/stop": //FALLTHROUGH
-                        case "/quit": //FALLTHROUGH
+                        case "/stop":
+                            //FALLTHROUGH
+                        case "/quit":
+                            //FALLTHROUGH
                         case "/exit":
                             return;
                         
