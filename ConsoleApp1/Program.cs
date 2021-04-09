@@ -25,7 +25,7 @@ namespace ConsoleApp1
 
         public override string ToString()
         {
-            return "SubTask id: " + Id + "; Info: " + TaskInfo + "; Status: " + (IsCompleted ? "done" : "unsolved");
+            return GetType().Name + " --> ID: " + Id + "; Info: " + TaskInfo + "; Status: " + (IsCompleted ? "done" : "unsolved");
         }
     }
 
