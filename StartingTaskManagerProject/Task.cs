@@ -1,6 +1,5 @@
 ﻿namespace StartingTaskManagerProject
 {
-    
     public class Task : BaseTask
     {
         public string TaskInfo { get; } //public for json
