@@ -1,5 +1,6 @@
 ﻿namespace StartingTaskManagerProject
 {
+    
     public abstract class BaseTask
     {
         public bool IsCompleted { get; private set; }
