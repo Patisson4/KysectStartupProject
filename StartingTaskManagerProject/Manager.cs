@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -21,6 +20,16 @@ namespace StartingTaskManagerProject
             NextId = nextId;
             CountCompleted = countCompleted;
             Tasks = tasks ?? new SortedDictionary<uint, T>();
+        }
+
+        public T this[uint i]
+        {
+            get
+            {
+                if (!Tasks.ContainsKey(i))
+                    throw new IndexOutOfRangeException("Index of SortedDictionary is out of range");
+                return Tasks[i];
+            }
         }
 
         public bool Add(T obj)
@@ -63,12 +72,11 @@ namespace StartingTaskManagerProject
         {
             var file = new StreamWriter(path, false);
 
-            //file.Write(Compose());
-
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
             };
+
             file.Write(JsonSerializer.Serialize(this, options));
 
             file.Close();
@@ -85,24 +93,6 @@ namespace StartingTaskManagerProject
             Tasks = new SortedDictionary<uint, T>(obj.Tasks);
 
             file.Close();
-        }
-
-        public void Show()
-        {
-            if (Tasks.Count == 0)
-                Console.WriteLine("No " + typeof(T).Name + " to do yet");
-            else
-                foreach (var item in Tasks)
-                    Console.WriteLine("ID: " + item.Key + "; " + item.Value);
-        }
-
-        public void ShowCompleted()
-        {
-            if (CountCompleted == 0)
-                Console.WriteLine("No completed " + typeof(T).Name + " yet");
-            else
-                foreach (var item in Tasks.Where(item => item.Value.IsCompleted))
-                    Console.WriteLine("ID: " + item.Key + "; " + item.Value);
         }
     }
 }

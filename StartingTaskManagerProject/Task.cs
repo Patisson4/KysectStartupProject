@@ -9,12 +9,6 @@
             TaskInfo = taskInfo;
         }
 
-        public override string ToString()
-        {
-            return "Type: " + GetType().Name + "; Info: " + TaskInfo + "; Status: " +
-                   (IsCompleted ? "done" : "unsolved");
-        }
-
         public override bool Equals(object obj)
         {
             if (obj == null || GetType() != obj.GetType())
