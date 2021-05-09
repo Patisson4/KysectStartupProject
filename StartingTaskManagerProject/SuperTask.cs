@@ -12,5 +12,13 @@ namespace StartingTaskManagerProject
             Subs = subs ?? new Manager<Task>();
             Deadline = deadline;
         }
+        
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+                return false;
+            var task = (SuperTask) obj;
+            return TaskInfo == task.TaskInfo && Deadline == task.Deadline;
+        }
     }
 }
