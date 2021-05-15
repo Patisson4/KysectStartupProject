@@ -9,10 +9,10 @@ namespace StartingTaskManagerProject
 {
     public class Manager<T> where T : BaseTask
     {
-        public uint NextId { get; private set; } //public for json
-        public uint CountCompleted { get; private set; } //public for json
+        public uint NextId { get; private set; }
+        public uint CountCompleted { get; private set; }
 
-        public SortedDictionary<uint, T> Tasks { get; private set; } //public for json
+        public SortedDictionary<uint, T> Tasks { get; private set; }
         [JsonIgnore] public ReadOnlyDictionary<uint, T> Data => new(Tasks); //for upper-level task usages
 
         public Manager(uint nextId = 0, uint countCompleted = 0, SortedDictionary<uint, T> tasks = null)
@@ -28,16 +28,17 @@ namespace StartingTaskManagerProject
             {
                 if (!Tasks.ContainsKey(i))
                     throw new IndexOutOfRangeException("Index of SortedDictionary is out of range");
+
                 return Tasks[i];
             }
         }
 
-        public bool Add(T obj)
+        public bool Add(T task)
         {
-            if (Tasks.ContainsValue(obj))
+            if (Tasks.ContainsValue(task))
                 return false;
 
-            Tasks[NextId] = obj;
+            Tasks[NextId] = task;
             NextId++;
 
             return true;
@@ -45,13 +46,13 @@ namespace StartingTaskManagerProject
 
         public bool Complete(uint id)
         {
-            if (!Tasks.TryGetValue(id, out var buf))
+            if (!Tasks.TryGetValue(id, out var task))
                 return false;
 
-            if (buf.IsCompleted) //what to do if task already completed?
+            if (task.IsCompleted)
                 return true;
 
-            buf.Complete();
+            task.Complete();
             CountCompleted++;
 
             return true;
@@ -59,10 +60,10 @@ namespace StartingTaskManagerProject
 
         public bool Remove(uint id)
         {
-            if (!Tasks.Remove(id, out var buf))
+            if (!Tasks.Remove(id, out var task))
                 return false;
 
-            if (buf.IsCompleted)
+            if (task.IsCompleted)
                 CountCompleted--;
 
             return true;
@@ -76,21 +77,19 @@ namespace StartingTaskManagerProject
             {
                 WriteIndented = true,
             };
-
             file.Write(JsonSerializer.Serialize(this, options));
-
+            
             file.Close();
         }
 
         public void Load(string path)
         {
             var file = new StreamReader(path);
-            var obj = JsonSerializer.Deserialize<Manager<T>>(file.ReadToEnd());
+            var manager = JsonSerializer.Deserialize<Manager<T>>(file.ReadToEnd());
 
-            //this = obj
-            NextId = obj.NextId;
-            CountCompleted = obj.CountCompleted;
-            Tasks = new SortedDictionary<uint, T>(obj.Tasks);
+            NextId = manager?.NextId ?? throw new Exception("Failed to deserialize in method Load");
+            CountCompleted = manager.CountCompleted;
+            Tasks = new SortedDictionary<uint, T>(manager.Tasks);
 
             file.Close();
         }

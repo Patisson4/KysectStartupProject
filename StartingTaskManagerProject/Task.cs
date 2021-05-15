@@ -2,7 +2,7 @@
 {
     public class Task : BaseTask
     {
-        public string TaskInfo { get; } //public for json
+        public string TaskInfo { get; }
 
         public Task(string taskInfo, bool isCompleted = false) : base(isCompleted)
         {
@@ -13,6 +13,7 @@
         {
             if (obj == null || GetType() != obj.GetType())
                 return false;
+            
             var task = (Task) obj;
             return TaskInfo == task.TaskInfo;
         }

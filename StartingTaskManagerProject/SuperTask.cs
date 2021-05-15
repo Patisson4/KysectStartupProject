@@ -4,7 +4,7 @@ namespace StartingTaskManagerProject
 {
     public class SuperTask : Task
     {
-        public DateTime? Deadline { get; } //should be made private?? i thought no cuz DataTime is immutable 
+        public DateTime? Deadline { get; }
         public Manager<Task> Subs { get; }
         
         public SuperTask(string taskInfo, DateTime? deadline = null, bool isCompleted = false, Manager<Task> subs = null) : base(taskInfo, isCompleted)
@@ -17,6 +17,7 @@ namespace StartingTaskManagerProject
         {
             if (obj == null || GetType() != obj.GetType())
                 return false;
+            
             var task = (SuperTask) obj;
             return TaskInfo == task.TaskInfo && Deadline == task.Deadline;
         }
