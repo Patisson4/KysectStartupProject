@@ -25,14 +25,7 @@ namespace StartingTaskManagerProject
 
         public override int GetHashCode()
         {
-            var hash = base.GetHashCode();
-            
-            hash = hash * 7 + Deadline.GetHashCode();
-            
-            foreach (var (_, value) in Subs.Data)
-                hash = hash * 7 + value.GetHashCode();
-            
-            return hash;
+            return base.GetHashCode() * 7 + Deadline.GetHashCode();
         }
     }
 }
