@@ -22,5 +22,17 @@ namespace StartingTaskManagerProject
             var task = (SuperTask) obj;
             return TaskInfo == task.TaskInfo && Deadline == task.Deadline;
         }
+
+        public override int GetHashCode()
+        {
+            var hash = base.GetHashCode();
+            
+            hash = hash * 7 + Deadline.GetHashCode();
+            
+            foreach (var (_, value) in Subs.Data)
+                hash = hash * 7 + value.GetHashCode();
+            
+            return hash;
+        }
     }
 }

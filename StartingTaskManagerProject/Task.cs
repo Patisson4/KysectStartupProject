@@ -17,5 +17,10 @@
             var task = (Task) obj;
             return TaskInfo == task.TaskInfo;
         }
+
+        public override int GetHashCode()
+        {
+            return TaskInfo.GetHashCode();
+        }
     }
 }
