@@ -13,7 +13,7 @@
         {
             if (obj == null || GetType() != obj.GetType())
                 return false;
-            
+
             var task = (Task) obj;
             return TaskInfo == task.TaskInfo;
         }

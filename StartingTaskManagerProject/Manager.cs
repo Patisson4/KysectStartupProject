@@ -78,7 +78,7 @@ namespace StartingTaskManagerProject
                 WriteIndented = true,
             };
             file.Write(JsonSerializer.Serialize(this, options));
-            
+
             file.Close();
         }
 
