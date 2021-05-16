@@ -87,7 +87,9 @@ namespace StartingTaskManagerProject
             var file = new StreamReader(path);
             var manager = JsonSerializer.Deserialize<Manager<T>>(file.ReadToEnd());
 
-            NextId = manager?.NextId ?? throw new Exception("Failed to deserialize in method Load");
+            if (manager == null) throw new Exception("Failed to deserialize in method Load");
+            
+            NextId = manager.NextId;
             CountCompleted = manager.CountCompleted;
             Tasks = new SortedDictionary<uint, T>(manager.Tasks);
 

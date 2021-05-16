@@ -8,13 +8,13 @@ namespace StartingTaskManagerProject
         public static void Main()
         {
             var taskManager = new Manager<SuperTask>();
-            string input;
 
-            while ((input = Console.ReadLine()) != null && input != "") //input comparision may be redundant?
+            while (true)
             {
-                var statement = input.Split(' ');
+                var input = Console.ReadLine();
                 try
                 {
+                    var statement = input.Split(' ');
                     var command = statement[0];
                     switch (command)
                     {
@@ -77,7 +77,7 @@ namespace StartingTaskManagerProject
                                     throw new ArgumentException("Method 'Add' invoked with wrong amount of arguments");
                             }
 
-                            Console.WriteLine("Object added successfully");
+                            Console.WriteLine("Task added successfully");
                             break;
 
                         case "/add-subtask":
@@ -92,7 +92,7 @@ namespace StartingTaskManagerProject
                             if (!taskManager[taskId].Subs.Add(new Task(statement[2])))
                                 throw new Exception("An error occured while adding new " + typeof(Task));
 
-                            Console.WriteLine("Object added successfully");
+                            Console.WriteLine("Subtask added successfully");
                             break;
                         }
 
@@ -107,13 +107,7 @@ namespace StartingTaskManagerProject
                             if (!taskManager.Complete(completeId))
                                 throw new Exception("An error occured while marking object as complete");
 
-                            //if SuperTask is completed, then all its subtask must be also completed
-                            foreach (var (key, _) in taskManager[completeId].Subs.Data)
-                                taskManager[completeId].Subs.Complete(key);
-
-                            //check behaviour of previous for if Complete() will be changed
-
-                            Console.WriteLine("Object completed successfully");
+                            Console.WriteLine("Task completed successfully");
                             break;
 
                         case "/complete-subtask":
@@ -127,12 +121,11 @@ namespace StartingTaskManagerProject
                             if (!taskManager[taskId].Subs.Complete(subtaskId))
                                 throw new Exception("An error occured while marking object as complete");
 
-                            Console.WriteLine("Object completed successfully");
+                            Console.WriteLine("Subtask completed successfully");
                             break;
                         }
 
                         case "/delete":
-                            //although method is called 'Remove', command is called 'Delete', that's why there is such a comment
                             if (statement.Length != 2)
                                 throw new ArgumentException(
                                     "Method 'Delete' has at least 1 parameter but is invoked with 0 arguments");
@@ -143,10 +136,10 @@ namespace StartingTaskManagerProject
                             if (!taskManager.Remove(removeId))
                                 throw new Exception("An error occured while deleting object");
 
-                            Console.WriteLine("Object deleted successfully");
+                            Console.WriteLine("Task deleted successfully");
                             break;
 
-                        //TODO: if you add a subtask, complete it and delete this subtask - the parent task will be marked as completed, although it shouldn't
+                        //BUG: if you add a subtask, complete it and delete this subtask - the parent task will be marked as completed, although it shouldn't
                         case "/delete-subtask":
                         {
                             if (!uint.TryParse(statement[1], out var taskId))
@@ -158,7 +151,7 @@ namespace StartingTaskManagerProject
                             if (!taskManager[taskId].Subs.Remove(subtaskId))
                                 throw new Exception("An error occured while deleting subtask");
 
-                            Console.WriteLine("Object deleted successfully");
+                            Console.WriteLine("Subtask deleted successfully");
                             break;
                         }
 
